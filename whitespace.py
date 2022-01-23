@@ -45,8 +45,12 @@ class WhitespaceVM:
         self.next_input = 0         # the next thing to read from the stream
         self.debug_flag = False     # flag to control depub statements
 
-    def debug(self, str, end='\n'):
-        if (self.debug_flag): print(str, end=end)
+    def debug(self, str, end='\n', showstack=False):
+        if (self.debug_flag):
+            if showstack:
+                print(f"{str} stack={self.stack}", end=end)
+            else:
+                print(str, end=end)
 
     def strip_comments(self):
         # since comments can be ANYWHERE, including in the middle of the
@@ -192,32 +196,32 @@ class WhitespaceVM:
         while self.ip < len(self.code):
             # process instructions
             if self.is_op(OP_PUSH):
-                self.debug("----- OP_PUSH -----")
+                self.debug("----- OP_PUSH -----", showstack=True)
                 arg = self.parse_num()
                 self.stack.appendleft(arg)
                 self.debug(f"Pushed {arg} onto stack")
             elif self.is_op(OP_DUP):
-                self.debug("----- OP_DUP -----")
+                self.debug("----- OP_DUP -----", showstack=True)
                 self.stack.appendleft(self.stack[0]) # blows up if stack empty
                 self.debug(f"Duplicated {self.stack[0]} onto stack")
             elif self.is_op(OP_COPY):
-                self.debug("----- OP_COPY -----")
+                self.debug("----- OP_COPY -----", showstack=True)
                 arg = self.parse_num()
                 val = self.stack[arg]
                 self.stack.appendleft(val)
                 self.debug(f"Copied {arg}th stack element value={val} onto stack")
             elif self.is_op(OP_SWAP):
-                self.debug("----- OP_SWAP -----")
+                self.debug("----- OP_SWAP -----", showstack=True)
                 data0 = self.stack.popleft()
                 data1 = self.stack.popleft()
                 self.stack.appendleft(data0)
                 self.stack.appendleft(data1)
             elif self.is_op(OP_DISCARD):
-                self.debug("----- OP_DISCARD -----")
+                self.debug("----- OP_DISCARD -----", showstack=True)
                 data = self.stack.popleft()
                 self.debug(f"Discarded {data} from the stack")
             elif self.is_op(OP_SLIDE):
-                self.debug("----- OP_SLIDE -----")
+                self.debug("----- OP_SLIDE -----", showstack=True)
                 arg = self.parse_num()
                 arg_saved = arg
                 data = self.stack.popleft()
@@ -228,15 +232,15 @@ class WhitespaceVM:
                 self.stack.appendleft(data)
                 self.debug(f"Slided {arg_saved} stack element(s) from stack, kept the top={data}")
             elif self.is_op(OP_ADD):
-                self.debug("----- OP_ADD -----")
+                self.debug("----- OP_ADD -----", showstack=True)
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 + data1)
             elif self.is_op(OP_SUB):
-                self.debug("----- OP_SUB -----")
+                self.debug("----- OP_SUB -----", showstack=True)
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 - data1)
             elif self.is_op(OP_MULT):
-                self.debug("----- OP_MULT -----")
+                self.debug("----- OP_MULT -----", showstack=True)
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 * data1)
             elif self.is_op(OP_DIV):
@@ -244,69 +248,69 @@ class WhitespaceVM:
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 // data1)
             elif self.is_op(OP_MOD):
-                self.debug("----- OP_MOD -----")
+                self.debug("----- OP_MOD -----", showstack=True)
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 % data1)
             elif self.is_op(OP_STORE):
-                self.debug("----- OP_STORE -----")
+                self.debug("----- OP_STORE -----", showstack=True)
                 val, addr = self.stack.popleft(),  self.stack.popleft()
                 self.heap[addr] = val
                 self.debug(f"Stored {val} at heap address {addr}")
             elif self.is_op(OP_RETRIEVE):
-                self.debug("----- OP_RETRIEVE -----")
+                self.debug("----- OP_RETRIEVE -----", showstack=True)
                 addr = self.stack.popleft()
                 self.stack.appendleft(self.heap[addr])
             elif self.is_op(OP_MARK):
-                self.debug("----- OP_MARK -----")
+                self.debug("----- OP_MARK -----", showstack=True)
                 self.parse_label()
                 self.debug("Doing nothing")
                 # we've already done this during scan_label()
             elif self.is_op(OP_CALL):
-                self.debug("----- OP_CALL -----")
+                self.debug("----- OP_CALL -----", showstack=True)
                 arg = self.parse_label()
                 # remember: ip now points after the LF of the label just read
                 self.return_addrs.appendleft(self.ip)
                 self.ip = self.labels[arg]
             elif self.is_op(OP_JUMP):
-                self.debug("----- OP_JUMP -----")
+                self.debug("----- OP_JUMP -----", showstack=True)
                 arg = self.parse_label()
                 self.ip = self.labels[arg]
                 self.debug(f"Jumped to label={arg}, which is at ip={self.ip}")
             elif self.is_op(OP_JUMPZERO):
-                self.debug("----- OP_JUMPZERO -----")
+                self.debug("----- OP_JUMPZERO -----", showstack=True)
                 arg = self.parse_label()
                 if self.stack.popleft() == 0:
                     self.ip = self.labels[arg]
                     self.debug(f"Jumped on ZERO to label={arg}, which is at ip={self.ip}")
             elif self.is_op(OP_JUMPNEG):
-                self.debug("----- OP_JUMPNEG -----")
+                self.debug("----- OP_JUMPNEG -----", showstack=True)
                 arg = self.parse_label()
                 if self.stack.popleft() < 0:
                     self.ip = self.labels[arg]
                     self.debug(f"Jumped on NEGATIVE to label={arg}, which is at ip={self.ip}")
             elif self.is_op(OP_RETURN):
-                self.debug("----- OP_RETURN -----")
+                self.debug("----- OP_RETURN -----", showstack=True)
                 self.ip = self.return_addrs.popleft()
             elif self.is_op(OP_ENDPROG):
                 exit("\nPROGRAM COMPLETED SUCCESSFULLY.")
             elif self.is_op(OP_OUTCH):
-                self.debug("----- OP_OUTCH -----")
-                self.debug("\t\t>>>>>OUTPUT [", end='')
+                self.debug("----- OP_OUTCH -----", showstack=True)
+                self.debug(">>>>>OUTPUT [", end='')
                 print(chr(self.stack.popleft()), end='')
                 self.debug("]")
             elif self.is_op(OP_OUTNUM):
-                self.debug("----- OP_OUTNUM -----")
-                self.debug("\t\t>>>>>OUTPUT [", end='')
+                self.debug("----- OP_OUTNUM -----", showstack=True)
+                self.debug(">>>>>OUTPUT [", end='')
                 print(self.stack.popleft(), end='')
                 self.debug("]")
             elif self.is_op(OP_INCH):
-                self.debug("----- OP_INCH -----")
+                self.debug("----- OP_INCH -----", showstack=True)
                 addr = self.stack.popleft()
                 data = ord(self.user_input())
                 self.heap[addr] = data
                 self.debug(f"Read character {data} into heap at addr {addr}")
             elif self.is_op(OP_INNUM):
-                self.debug("----- OP_INNUM -----")
+                self.debug("----- OP_INNUM -----", showstack=True)
                 addr = self.stack.popleft()
                 data = int(self.user_input())
                 self.heap[addr] = data
