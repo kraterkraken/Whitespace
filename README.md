@@ -2,7 +2,7 @@
 An interpretter for Edwin Brady's and Chris Morris's Whitespace esoteric programming language.  Writen in Python3.
 
 ### Usage
-`
+```
 whitepsace.py - execute a program in the Whitespace programming language
 
 usage: whitespace.py [--debug] filename
@@ -14,5 +14,5 @@ Options:
   --test                  Runs unit tests (overrides filename)
   --debug                 Turns on verbose debugging
   --help                  Prints this help info
-`
+```
 
