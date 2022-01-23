@@ -1,5 +1,5 @@
 # Whitespace
-An interpretter for Edwin Brady's and Chris Morris's [Whitespace esoteric programming language](https://en.wikipedia.org/wiki/Whitespace_(programming_language)).  Writen in Python3.
+An interpretter for Edwin Brady's and Chris Morris's [Whitespace esoteric programming language](https://en.wikipedia.org/wiki/Whitespace_(programming_language)).  Written in Python3.
 
 ### Usage
 ```
