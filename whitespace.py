@@ -34,10 +34,17 @@ OP_INNUM    = TAB   + LF    + TAB   + TAB
 
 # -------------------------------CLASSES
 class WhitespaceVM:
+
+    class Token:
+        def __init__(self, op="", arg=""):
+            self.op = op
+            self.arg = arg
+
     def __init__(self, code='', heapsize=HEAPSIZE):
         self.ip = 0                 # instruction pointer
         self.code = code            # string containing Whitespace code
         self.stack = deque()        # the internal data stack
+        self.tokens = []            # contains the instructions after tokenizing
         self.heap = [0] * heapsize  # memory heap
         self.labels = {}            # dictionary of label,addr pairs for flow
         self.return_addrs = deque() # where to go back to when subroutine ends
@@ -46,17 +53,27 @@ class WhitespaceVM:
         self.debug_flag = False     # flag to control depub statements
         self.describe_flag = False  # flag to control whether we describe the source
 
+    def debug_token(self, token):
+        self.debug(f"{token.op} {token.arg}", showstack=True)
+
     def debug(self, str, end='\n', showstack=False):
         if (self.debug_flag):
+            print(str, end="")
             if showstack:
-                print(f"{str} stack={self.stack}", end=end)
+                s = "["
+                sep = ","
+                for a in self.stack:
+                    s = f"{s}{sep}{a}"
+                    sep = ","
+                print(f" stack={s}]")
             else:
-                print(str, end=end)
+                print("", end=end)
 
     def strip_comments(self):
         # since comments can be ANYWHERE, including in the middle of the
         # string of characters that represents a command, I decided the
         # easiest thing to do was to kill all the comments before parsing
+        self.debug("Stripping comments ...")
         self.code = "".join([ch for ch in self.code if ch in (SPACE, TAB, LF)])
 
     def user_input(self):
@@ -96,7 +113,7 @@ class WhitespaceVM:
         # not sure if python can index a dictionary with whitespace characters
         # so I'll "unwhite" the labels first
         label = self.unwhite(label)
-        self.debug(f"Parsed label {label}")
+        #self.debug(f"  Parsed label {label}")
         self.ip += 1
         return label
 
@@ -148,182 +165,194 @@ class WhitespaceVM:
             # we didn't find the candidate here
             return False
 
+    def describe(self):
+        for token in self.tokens:
+            print(f"{token.op} {token.arg}")
+
     def scan_labels(self):
-        # We have to scan the entire program first for labels, otherwise
-        # we might encounter a jump-to-label command for a label that
-        # hasn't been encountered yet.
-        # This is ugly.  I hate duplicating this while loop.
-        self.debug("===Begin label scan==========================")
+        # We have to scan the entire program for labels (before execution)
+        # otherwise we might encounter a jump-to-label command for a label
+        # that hasn't been encountered yet.
+        self.debug("Scanning for labels ...")
+        for i, token in enumerate(self.tokens):
+            if token.op == "MARK":
+                self.debug(f"  Marking token #{i} with label {token.arg}")
+                self.labels[token.arg] = i
+
+    def tokenize(self):
+        # Converts the code string of incomprehensible whitespace
+        # into a nice list of readable tokens for execution (and display).
+        self.debug("Tokenizing ...")
         while self.ip < len(self.code):
             if self.is_op(OP_MARK):
-                self.debug("----- OP_MARK -----")
-                arg = self.parse_label()
-                # remember: ip now points after the LF of the label just read
-                self.labels[arg] = self.ip
-                self.debug(f"Marked ip={self.ip} with label={arg}")
-            elif self.is_op(OP_PUSH): self.parse_num()
-            elif self.is_op(OP_DUP): pass
-            elif self.is_op(OP_COPY): self.parse_num()
-            elif self.is_op(OP_SWAP): pass
-            elif self.is_op(OP_DISCARD): pass
-            elif self.is_op(OP_SLIDE): self.parse_num()
-            elif self.is_op(OP_ADD): pass
-            elif self.is_op(OP_SUB): pass
-            elif self.is_op(OP_MULT): pass
-            elif self.is_op(OP_DIV): pass
-            elif self.is_op(OP_MOD): pass
-            elif self.is_op(OP_STORE): pass
-            elif self.is_op(OP_RETRIEVE): pass
-            elif self.is_op(OP_CALL): self.parse_label()
-            elif self.is_op(OP_JUMP): self.parse_label()
-            elif self.is_op(OP_JUMPZERO): self.parse_label()
-            elif self.is_op(OP_JUMPNEG): self.parse_label()
-            elif self.is_op(OP_RETURN): pass
-            elif self.is_op(OP_ENDPROG): pass
-            elif self.is_op(OP_OUTCH): pass
-            elif self.is_op(OP_OUTNUM): pass
-            elif self.is_op(OP_INCH): pass
-            elif self.is_op(OP_INNUM): pass
+                self.tokens.append(self.Token(op="MARK", arg=self.parse_label()))
+            elif self.is_op(OP_PUSH):
+                self.tokens.append(self.Token(op="PUSH", arg=self.parse_num()))
+            elif self.is_op(OP_DUP):
+                self.tokens.append(self.Token(op="DUPLICATE"))
+            elif self.is_op(OP_COPY):
+                self.tokens.append(self.Token(op="COPY", arg=self.parse_num()))
+            elif self.is_op(OP_SWAP):
+                self.tokens.append(self.Token(op="SWAP"))
+            elif self.is_op(OP_DISCARD):
+                self.tokens.append(self.Token(op="DISCARD"))
+            elif self.is_op(OP_SLIDE):
+                self.tokens.append(self.Token(op="SLIDE", arg=self.parse_num()))
+            elif self.is_op(OP_ADD):
+                self.tokens.append(self.Token(op="ADD"))
+            elif self.is_op(OP_SUB):
+                self.tokens.append(self.Token(op="SUBTRACT"))
+            elif self.is_op(OP_MULT):
+                self.tokens.append(self.Token(op="MULTIPLY"))
+            elif self.is_op(OP_DIV):
+                self.tokens.append(self.Token(op="DIVIDE"))
+            elif self.is_op(OP_MOD):
+                self.tokens.append(self.Token(op="MODULO"))
+            elif self.is_op(OP_STORE):
+                self.tokens.append(self.Token(op="STORE"))
+            elif self.is_op(OP_RETRIEVE):
+                self.tokens.append(self.Token(op="RETRIEVE"))
+            elif self.is_op(OP_CALL):
+                self.tokens.append(self.Token(op="CALL", arg=self.parse_label()))
+            elif self.is_op(OP_JUMP):
+                self.tokens.append(self.Token(op="JUMP", arg=self.parse_label()))
+            elif self.is_op(OP_JUMPZERO):
+                self.tokens.append(self.Token(op="JUMPZERO", arg=self.parse_label()))
+            elif self.is_op(OP_JUMPNEG):
+                self.tokens.append(self.Token(op="JUMPNEG", arg=self.parse_label()))
+            elif self.is_op(OP_RETURN):
+                self.tokens.append(self.Token(op="RETURN"))
+            elif self.is_op(OP_ENDPROG):
+                self.tokens.append(self.Token(op="ENDPROGRAM"))
+            elif self.is_op(OP_OUTCH):
+                self.tokens.append(self.Token(op="OUTCH"))
+            elif self.is_op(OP_OUTNUM):
+                self.tokens.append(self.Token(op="OUTNUM"))
+            elif self.is_op(OP_INCH):
+                self.tokens.append(self.Token(op="INCH"))
+            elif self.is_op(OP_INNUM):
+                self.tokens.append(self.Token(op="INNUM"))
             else:
-                exit(f"SYNTAX ERROR : BAD INSTRUCTION "
-                    f"{self.unwhite(self.code[self.ip:],25)} WHILE SCANNING LABELS")
-        self.debug("===End label scan==========================")
+                exit(f"SYNTAX ERROR : BAD WHITESPACE INSTRUCTION "
+                    f"{self.unwhite(self.code[self.ip:],25)}"
+                    f" at location {self.ip}"
+                    )
 
     def run(self):
         self.strip_comments()
+        self.tokenize()
         self.scan_labels()
-        self.ip = 0 # reset the instruction pointer to the beginning
+        if (self.describe_flag):
+            self.describe()
+        else:
+            self.execute()
 
-        while self.ip < len(self.code):
-            # process instructions
-            if self.is_op(OP_PUSH):
-                self.debug("----- OP_PUSH -----", showstack=True)
-                arg = self.parse_num()
-                self.stack.appendleft(arg)
-                self.debug(f"Pushed {arg} onto stack")
-            elif self.is_op(OP_DUP):
-                self.debug("----- OP_DUP -----", showstack=True)
+    def execute(self):
+        self.debug("Executing ...\n")
+        i = 0
+        while i < len(self.tokens):
+            token = self.tokens[i]
+            self.debug_token(token)
+            if token.op == "PUSH":
+                self.stack.appendleft(token.arg)
+            elif token.op == "DUPLICATE":
                 self.stack.appendleft(self.stack[0]) # blows up if stack empty
-                self.debug(f"Duplicated {self.stack[0]} onto stack")
-            elif self.is_op(OP_COPY):
-                self.debug("----- OP_COPY -----", showstack=True)
-                arg = self.parse_num()
-                val = self.stack[arg]
+            elif token.op == "COPY":
+                val = self.stack[token.arg]
                 self.stack.appendleft(val)
-                self.debug(f"Copied {arg}th stack element value={val} onto stack")
-            elif self.is_op(OP_SWAP):
-                self.debug("----- OP_SWAP -----", showstack=True)
+            elif token.op == "SWAP":
                 data0 = self.stack.popleft()
                 data1 = self.stack.popleft()
                 self.stack.appendleft(data0)
                 self.stack.appendleft(data1)
-            elif self.is_op(OP_DISCARD):
-                self.debug("----- OP_DISCARD -----", showstack=True)
+            elif token.op == "DISCARD":
                 data = self.stack.popleft()
-                self.debug(f"Discarded {data} from the stack")
-            elif self.is_op(OP_SLIDE):
-                self.debug("----- OP_SLIDE -----", showstack=True)
-                arg = self.parse_num()
+            elif token.op == "SLIDE":
+                arg = token.arg
                 arg_saved = arg
                 data = self.stack.popleft()
                 while arg:
                     arg = arg - 1
                     slide_data = self.stack.popleft()
-                    self.debug(f"Slided value={slide_data} off the stack")
+                    self.debug(f"  Slided value={slide_data} off the stack")
                 self.stack.appendleft(data)
-                self.debug(f"Slided {arg_saved} stack element(s) from stack, kept the top={data}")
-            elif self.is_op(OP_ADD):
-                self.debug("----- OP_ADD -----", showstack=True)
+            elif token.op == "ADD":
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 + data1)
-            elif self.is_op(OP_SUB):
-                self.debug("----- OP_SUB -----", showstack=True)
+            elif token.op == "SUBTRACT":
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 - data1)
-            elif self.is_op(OP_MULT):
-                self.debug("----- OP_MULT -----", showstack=True)
+            elif token.op == "MULTIPLY":
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 * data1)
-            elif self.is_op(OP_DIV):
-                self.debug("----- OP_DIV -----")
+            elif token.op == "DIVIDE":
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 // data1)
-            elif self.is_op(OP_MOD):
-                self.debug("----- OP_MOD -----", showstack=True)
+            elif token.op == "MODULO":
                 data1, data0 = self.stack.popleft(),  self.stack.popleft()
                 self.stack.appendleft(data0 % data1)
-            elif self.is_op(OP_STORE):
-                self.debug("----- OP_STORE -----", showstack=True)
+            elif token.op == "STORE":
                 val, addr = self.stack.popleft(),  self.stack.popleft()
                 self.heap[addr] = val
-                self.debug(f"Stored {val} at heap address {addr}")
-            elif self.is_op(OP_RETRIEVE):
-                self.debug("----- OP_RETRIEVE -----", showstack=True)
+                self.debug(f"  Stored {val} at heap address {addr}")
+            elif token.op == "RETRIEVE":
                 addr = self.stack.popleft()
                 self.stack.appendleft(self.heap[addr])
-            elif self.is_op(OP_MARK):
-                self.debug("----- OP_MARK -----", showstack=True)
-                self.parse_label()
-                self.debug("Doing nothing")
-                # we've already done this during scan_label()
-            elif self.is_op(OP_CALL):
-                self.debug("----- OP_CALL -----", showstack=True)
-                arg = self.parse_label()
-                # remember: ip now points after the LF of the label just read
-                self.return_addrs.appendleft(self.ip)
-                self.ip = self.labels[arg]
-            elif self.is_op(OP_JUMP):
-                self.debug("----- OP_JUMP -----", showstack=True)
-                arg = self.parse_label()
-                self.ip = self.labels[arg]
-                self.debug(f"Jumped to label={arg}, which is at ip={self.ip}")
-            elif self.is_op(OP_JUMPZERO):
-                self.debug("----- OP_JUMPZERO -----", showstack=True)
-                arg = self.parse_label()
+            elif token.op == "MARK":
+                # we've already handled this during scan_label()
+                pass
+            elif token.op == "CALL":
+                self.return_addrs.appendleft(i+1)
+                old_i = i
+                i = self.labels[token.arg]
+                self.debug(f"  Calling label {token.arg} instruction #{i} from #{old_i}")
+                continue
+            elif token.op == "JUMP":
+                i = self.labels[token.arg]
+                self.debug(f"  Jumping to label={token.arg}")
+                continue
+            elif token.op == "JUMPZERO":
                 if self.stack.popleft() == 0:
-                    self.ip = self.labels[arg]
-                    self.debug(f"Jumped on ZERO to label={arg}, which is at ip={self.ip}")
-            elif self.is_op(OP_JUMPNEG):
-                self.debug("----- OP_JUMPNEG -----", showstack=True)
-                arg = self.parse_label()
+                    i = self.labels[token.arg]
+                    self.debug(f"  Jumping on ZERO to label={token.arg}")
+                    continue
+            elif token.op == "JUMPNEG":
                 if self.stack.popleft() < 0:
-                    self.ip = self.labels[arg]
-                    self.debug(f"Jumped on NEGATIVE to label={arg}, which is at ip={self.ip}")
-            elif self.is_op(OP_RETURN):
-                self.debug("----- OP_RETURN -----", showstack=True)
-                self.ip = self.return_addrs.popleft()
-            elif self.is_op(OP_ENDPROG):
+                    i = self.labels[token.arg]
+                    self.debug(f"  Jumping on NEGATIVE to label={token.arg}")
+                    continue
+            elif token.op == "RETURN":
+                i = self.return_addrs.popleft()
+                self.debug(f"  Returning to instruction #{i}")
+                continue
+            elif token.op == "ENDPROGRAM":
                 exit("\nPROGRAM COMPLETED SUCCESSFULLY.")
-            elif self.is_op(OP_OUTCH):
-                self.debug("----- OP_OUTCH -----", showstack=True)
-                self.debug(">>>>>OUTPUT [", end='')
+            elif token.op == "OUTCH":
+                self.debug("  >>>>>OUTPUT [", end='')
                 print(chr(self.stack.popleft()), end='')
                 self.debug("]")
-            elif self.is_op(OP_OUTNUM):
-                self.debug("----- OP_OUTNUM -----", showstack=True)
-                self.debug(">>>>>OUTPUT [", end='')
+            elif token.op == "OUTNUM":
+                self.debug("  >>>>>OUTPUT [", end='')
                 print(self.stack.popleft(), end='')
                 self.debug("]")
-            elif self.is_op(OP_INCH):
-                self.debug("----- OP_INCH -----", showstack=True)
+            elif token.op == "INCH":
                 addr = self.stack.popleft()
                 data = ord(self.user_input())
                 self.heap[addr] = data
-                self.debug(f"Read character {data} into heap at addr {addr}")
-            elif self.is_op(OP_INNUM):
-                self.debug("----- OP_INNUM -----", showstack=True)
+                self.debug(f"  Read character {data} into heap at addr {addr}")
+            elif token.op == "INNUM":
                 addr = self.stack.popleft()
                 data = int(self.user_input())
                 self.heap[addr] = data
-                self.debug(f"Read character {data} into heap at addr {addr}")
-
+                self.debug(f"  Read character {data} into heap at addr {addr}")
             else:
-                exit(f"SYNTAX ERROR : BAD INSTRUCTION "
-                    f"{self.unwhite(self.code[self.ip:],25)}")
+                # this is only possible if I miscoded something
+                exit(f"SYNTAX ERROR: BAD TOKEN: {token.op} {token.arg}")
 
-            # there is no need to increment the ip here.
-            # remember: the ip was advanced in the calls to is_op()
-            # and parse_num(), so it is already pointing to the next instruction
+            self.debug("  stack is now: ", showstack=True)
+            # move index to the next token and loop again
+            i += 1
+
 
     test_code = (
         "-----BEGIN-SUBROUTINE-TO-OUTPUT-A-SPACE"
