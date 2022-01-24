@@ -472,7 +472,7 @@ def main():
     purpose_string = "whitepsace.py - execute a program in the Whitespace programming language\n"
     usage_string = (
         "usage: whitespace.py [--debug | --describe] filename\n"
-        "usage: whitespace.py [--debug] --test\n"
+        "usage: whitespace.py [--debug | --describe] --test\n"
         "usage: whitespace.py --help\n"
         "\n"
         "Options:\n"
