@@ -121,7 +121,7 @@ class WhitespaceVM:
                 # self.debug("0 ", end='')
                 # don't need to do anything with a zero, as the left shift
                 # already put a zero in there
-                None
+                pass
             else:
                 exit("SYNTAX ERROR : BAD NUMBER")
             self.ip = self.ip + 1
