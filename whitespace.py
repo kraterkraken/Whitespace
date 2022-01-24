@@ -7,43 +7,44 @@ SPACE = ' '
 TAB = '\t'
 LF = '\n'
 HEAPSIZE = 512
-OP_PUSH     = "".join([SPACE, SPACE])               # tested
-OP_DUP      = "".join([SPACE, LF, SPACE])           # tested
-OP_COPY     = "".join([SPACE, TAB, SPACE])          # tested
-OP_SWAP     = "".join([SPACE, LF, TAB])             # tested
-OP_DISCARD  = "".join([SPACE, LF, LF])              # tested
-OP_SLIDE    = "".join([SPACE, TAB, LF])             # tested
-OP_ADD      = "".join([TAB, SPACE, SPACE, SPACE])   # tested
-OP_SUB      = "".join([TAB, SPACE, SPACE, TAB])     # tested
-OP_MULT     = "".join([TAB, SPACE, SPACE, LF])      # tested
-OP_DIV      = "".join([TAB, SPACE, TAB, SPACE])     # tested
-OP_MOD      = "".join([TAB, SPACE, TAB, TAB])       # tested
-OP_STORE    = "".join([TAB, TAB, SPACE])            # tested
-OP_RETRIEVE = "".join([TAB, TAB, TAB])              # tested
-OP_MARK     = "".join([LF, SPACE, SPACE])           # tested
-OP_CALL     = "".join([LF, SPACE, TAB])             # tested
-OP_JUMP     = "".join([LF, SPACE, LF])              # tested
-OP_JUMPZERO = "".join([LF, TAB, SPACE])             # tested
-OP_JUMPNEG  = "".join([LF, TAB, TAB])               # tested
-OP_RETURN   = "".join([LF, TAB, LF])                # tested
-OP_ENDPROG  = "".join([LF, LF, LF])                 # tested
-OP_OUTCH    = "".join([TAB, LF, SPACE, SPACE])      # tested
-OP_OUTNUM   = "".join([TAB, LF, SPACE, TAB])        # tested
-OP_INCH     = "".join([TAB, LF, TAB, SPACE])        # tested
-OP_INNUM    = "".join([TAB, LF, TAB, TAB])          # tested
+OP_PUSH     = SPACE + SPACE
+OP_DUP      = SPACE + LF    + SPACE
+OP_COPY     = SPACE + TAB   + SPACE
+OP_SWAP     = SPACE + LF    + TAB
+OP_DISCARD  = SPACE + LF    + LF
+OP_SLIDE    = SPACE + TAB   + LF
+OP_ADD      = TAB   + SPACE + SPACE + SPACE
+OP_SUB      = TAB   + SPACE + SPACE + TAB
+OP_MULT     = TAB   + SPACE + SPACE + LF
+OP_DIV      = TAB   + SPACE + TAB   + SPACE
+OP_MOD      = TAB   + SPACE + TAB   + TAB
+OP_STORE    = TAB   + TAB   + SPACE
+OP_RETRIEVE = TAB   + TAB   + TAB
+OP_MARK     = LF    + SPACE + SPACE
+OP_CALL     = LF    + SPACE + TAB
+OP_JUMP     = LF    + SPACE + LF
+OP_JUMPZERO = LF    + TAB   + SPACE
+OP_JUMPNEG  = LF    + TAB   + TAB
+OP_RETURN   = LF    + TAB   + LF
+OP_ENDPROG  = LF    + LF    + LF
+OP_OUTCH    = TAB   + LF    + SPACE + SPACE
+OP_OUTNUM   = TAB   + LF    + SPACE + TAB
+OP_INCH     = TAB   + LF    + TAB   + SPACE
+OP_INNUM    = TAB   + LF    + TAB   + TAB
 
 # -------------------------------CLASSES
 class WhitespaceVM:
-    def __init__(self, code=''):
+    def __init__(self, code='', heapsize=HEAPSIZE):
         self.ip = 0                 # instruction pointer
         self.code = code            # string containing Whitespace code
         self.stack = deque()        # the internal data stack
-        self.heap = [0] * HEAPSIZE  # memory heap
+        self.heap = [0] * heapsize  # memory heap
         self.labels = {}            # dictionary of label,addr pairs for flow
         self.return_addrs = deque() # where to go back to when subroutine ends
         self.input_stream = ""      # a buffer to hold input
         self.next_input = 0         # the next thing to read from the stream
         self.debug_flag = False     # flag to control depub statements
+        self.describe_flag = False  # flag to control whether we describe the source
 
     def debug(self, str, end='\n', showstack=False):
         if (self.debug_flag):
@@ -441,7 +442,7 @@ def main():
     # Handle command arguments
     purpose_string = "whitepsace.py - execute a program in the Whitespace programming language\n"
     usage_string = (
-        "usage: whitespace.py [--debug] filename\n"
+        "usage: whitespace.py [--debug | --describe] filename\n"
         "usage: whitespace.py [--debug] --test\n"
         "usage: whitespace.py --help\n"
         "\n"
@@ -449,14 +450,19 @@ def main():
         "  filename                An input file containing Whitespace code\n"
         "  --test                  Runs unit tests (overrides filename)\n"
         "  --debug                 Turns on verbose debugging\n"
+        "  --describe              Describes the given Whitespace code.  Does not "
+        "                          execute the program."
         "  --help                  Prints this help info\n"
         )
     testarg = False
     debugarg = False
+    describearg = False
     filename = ""
     for arg in sys.argv[1:]:
         if arg == "--debug":
             debugarg = True
+        elif arg == "--describe":
+            describearg = True
         elif arg == "--test":
             testarg = True
         elif arg == "--help":
@@ -491,6 +497,7 @@ def main():
     # Execute the Whitespace source code
     vm = WhitespaceVM(source_code)
     vm.debug_flag = debugarg
+    vm.describe_flag = describearg
     vm.run()
 
 if __name__ == "__main__":
