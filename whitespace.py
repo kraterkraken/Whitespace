@@ -480,7 +480,7 @@ def main():
         "  --test                  Runs unit tests (overrides filename)\n"
         "  --debug                 Turns on verbose debugging\n"
         "  --describe              Describes the given Whitespace code.  Does not "
-        "                          execute the program."
+        "execute the program.\n"
         "  --help                  Prints this help info\n"
         )
     testarg = False
