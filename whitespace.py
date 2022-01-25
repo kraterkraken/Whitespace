@@ -513,9 +513,10 @@ def main():
     source_code = ""
     if testarg:
         source_code = WhitespaceVM.test_code
-        print("Running unit tests.  Expected results are:")
-        print(WhitespaceVM.expected_results)
-        print("Actual results are:")
+        if not describearg:
+            print("Running unit tests.  Expected results are:")
+            print(WhitespaceVM.expected_results)
+            print("Actual results are:")
     else:
         try:
             with open(filename) as f:
