@@ -195,10 +195,10 @@ class WhitespaceVM:
     def run(self):
         self.strip_comments()
         self.tokenize()
-        self.scan_labels()
         if (self.describe_flag):
             self.describe()
         else:
+            self.scan_labels()
             self.execute()
 
     def execute(self):
