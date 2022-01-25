@@ -7,30 +7,32 @@ SPACE = ' '
 TAB = '\t'
 LF = '\n'
 HEAPSIZE = 512
-OP_PUSH     = SPACE + SPACE
-OP_DUP      = SPACE + LF    + SPACE
-OP_COPY     = SPACE + TAB   + SPACE
-OP_SWAP     = SPACE + LF    + TAB
-OP_DISCARD  = SPACE + LF    + LF
-OP_SLIDE    = SPACE + TAB   + LF
-OP_ADD      = TAB   + SPACE + SPACE + SPACE
-OP_SUB      = TAB   + SPACE + SPACE + TAB
-OP_MULT     = TAB   + SPACE + SPACE + LF
-OP_DIV      = TAB   + SPACE + TAB   + SPACE
-OP_MOD      = TAB   + SPACE + TAB   + TAB
-OP_STORE    = TAB   + TAB   + SPACE
-OP_RETRIEVE = TAB   + TAB   + TAB
-OP_MARK     = LF    + SPACE + SPACE
-OP_CALL     = LF    + SPACE + TAB
-OP_JUMP     = LF    + SPACE + LF
-OP_JUMPZERO = LF    + TAB   + SPACE
-OP_JUMPNEG  = LF    + TAB   + TAB
-OP_RETURN   = LF    + TAB   + LF
-OP_ENDPROG  = LF    + LF    + LF
-OP_OUTCH    = TAB   + LF    + SPACE + SPACE
-OP_OUTNUM   = TAB   + LF    + SPACE + TAB
-OP_INCH     = TAB   + LF    + TAB   + SPACE
-OP_INNUM    = TAB   + LF    + TAB   + TAB
+OPERATIONS = (
+    {"name": "PUSH",       "opchars": SPACE + SPACE},
+    {"name": "DUPLICATE",  "opchars": SPACE + LF    + SPACE},
+    {"name": "COPY",       "opchars": SPACE + TAB   + SPACE},
+    {"name": "SWAP",       "opchars": SPACE + LF    + TAB},
+    {"name": "DISCARD",    "opchars": SPACE + LF    + LF},
+    {"name": "SLIDE",      "opchars": SPACE + TAB   + LF},
+    {"name": "ADD",        "opchars": TAB   + SPACE + SPACE + SPACE},
+    {"name": "SUBTRACT",   "opchars": TAB   + SPACE + SPACE + TAB},
+    {"name": "MULTIPLY",   "opchars": TAB   + SPACE + SPACE + LF},
+    {"name": "DIVIDE",     "opchars": TAB   + SPACE + TAB   + SPACE},
+    {"name": "MODULO",     "opchars": TAB   + SPACE + TAB   + TAB},
+    {"name": "STORE",      "opchars": TAB   + TAB   + SPACE},
+    {"name": "RETRIEVE",   "opchars": TAB   + TAB   + TAB},
+    {"name": "MARK",       "opchars": LF    + SPACE + SPACE},
+    {"name": "CALL",       "opchars": LF    + SPACE + TAB},
+    {"name": "JUMP",       "opchars": LF    + SPACE + LF},
+    {"name": "JUMPZERO",   "opchars": LF    + TAB   + SPACE},
+    {"name": "JUMPNEG",    "opchars": LF    + TAB   + TAB},
+    {"name": "RETURN",     "opchars": LF    + TAB   + LF},
+    {"name": "ENDPROGRAM", "opchars": LF    + LF    + LF},
+    {"name": "OUTCH",      "opchars": TAB   + LF    + SPACE + SPACE},
+    {"name": "OUTNUM",     "opchars": TAB   + LF    + SPACE + TAB},
+    {"name": "INCH",       "opchars": TAB   + LF    + TAB   + SPACE},
+    {"name": "INNUM",      "opchars": TAB   + LF    + TAB   + TAB}
+)
 
 # -------------------------------CLASSES
 class WhitespaceVM:
@@ -61,9 +63,9 @@ class WhitespaceVM:
             print(str, end="")
             if showstack:
                 s = "["
-                sep = ","
-                for a in self.stack:
-                    s = f"{s}{sep}{a}"
+                sep = ""
+                for item in self.stack:
+                    s = f"{s}{sep}{item}"
                     sep = ","
                 print(f" stack={s}]")
             else:
@@ -105,45 +107,49 @@ class WhitespaceVM:
             if max != -1 and n >= max: break
         return ret
 
-    def parse_label(self):
-        label = ""
-        while self.ip < len(self.code) and self.code[self.ip] != LF:
-            label += self.code[self.ip]
+    def parse_arg(self, operation):
+        if operation in ("MARK", "CALL", "JUMP", "JUMPNEG", "JUMPZERO"):
+            label = ""
+            while self.ip < len(self.code) and self.code[self.ip] != LF:
+                label += self.code[self.ip]
+                self.ip += 1
+            # not sure if python can index a dictionary with whitespace characters
+            # so I'll "unwhite" the labels first.  it will be easier to read
+            # during debug or describe mode anyway.
+            label = self.unwhite(label)
             self.ip += 1
-        # not sure if python can index a dictionary with whitespace characters
-        # so I'll "unwhite" the labels first
-        label = self.unwhite(label)
-        self.ip += 1
-        return label
+            return label
 
-    def parse_num(self):
-        num = 0
-        mult = 0
-        if self.code[self.ip] == SPACE:
-            # start of positive number
-            mult = 1
-        elif self.code[self.ip] == TAB:
-            # start of negative number
-            mult = -1
-        else:
-            exit("SYNTAX ERROR : BAD SIGN")
-
-        self.ip = self.ip + 1
-        while self.ip < len(self.code) and self.code[self.ip] != LF:
-            # about to add a new digit, so left shift the digits we have so far
-            num = num << 1
-            if self.code[self.ip] == TAB:
-                # found a 1
-                num = num | 1
-            elif self.code[self.ip] == SPACE:
-                # found a 0 (the left shift already put a zero in there)
-                pass
+        elif operation in ("PUSH", "COPY", "SLIDE"):
+            num = 0
+            mult = 0
+            if self.code[self.ip] == SPACE:
+                # start of positive number
+                mult = 1
+            elif self.code[self.ip] == TAB:
+                # start of negative number
+                mult = -1
             else:
-                exit("SYNTAX ERROR : BAD NUMBER")
-            self.ip = self.ip + 1
-        self.ip = self.ip + 1 # ip now points to the character after the LF
+                exit("SYNTAX ERROR : BAD SIGN")
 
-        return num * mult
+            self.ip = self.ip + 1
+            while self.ip < len(self.code) and self.code[self.ip] != LF:
+                # about to add a new digit, so left shift the digits we have so far
+                num = num << 1
+                if self.code[self.ip] == TAB:
+                    # found a 1
+                    num = num | 1
+                elif self.code[self.ip] == SPACE:
+                    # found a 0 (the left shift already put a zero in there)
+                    pass
+                else:
+                    exit("SYNTAX ERROR : BAD NUMBER")
+                self.ip = self.ip + 1
+            self.ip = self.ip + 1 # ip now points to the character after the LF
+
+            return num * mult
+        else:
+            return ""
 
     def is_op(self, candidate):
         left = len(self.code) - self.ip
@@ -180,59 +186,11 @@ class WhitespaceVM:
         # into a nice list of readable tokens for execution (and display).
         self.debug("Tokenizing ...")
         while self.ip < len(self.code):
-            if self.is_op(OP_MARK):
-                self.tokens.append(self.Token(op="MARK", arg=self.parse_label()))
-            elif self.is_op(OP_PUSH):
-                self.tokens.append(self.Token(op="PUSH", arg=self.parse_num()))
-            elif self.is_op(OP_DUP):
-                self.tokens.append(self.Token(op="DUPLICATE"))
-            elif self.is_op(OP_COPY):
-                self.tokens.append(self.Token(op="COPY", arg=self.parse_num()))
-            elif self.is_op(OP_SWAP):
-                self.tokens.append(self.Token(op="SWAP"))
-            elif self.is_op(OP_DISCARD):
-                self.tokens.append(self.Token(op="DISCARD"))
-            elif self.is_op(OP_SLIDE):
-                self.tokens.append(self.Token(op="SLIDE", arg=self.parse_num()))
-            elif self.is_op(OP_ADD):
-                self.tokens.append(self.Token(op="ADD"))
-            elif self.is_op(OP_SUB):
-                self.tokens.append(self.Token(op="SUBTRACT"))
-            elif self.is_op(OP_MULT):
-                self.tokens.append(self.Token(op="MULTIPLY"))
-            elif self.is_op(OP_DIV):
-                self.tokens.append(self.Token(op="DIVIDE"))
-            elif self.is_op(OP_MOD):
-                self.tokens.append(self.Token(op="MODULO"))
-            elif self.is_op(OP_STORE):
-                self.tokens.append(self.Token(op="STORE"))
-            elif self.is_op(OP_RETRIEVE):
-                self.tokens.append(self.Token(op="RETRIEVE"))
-            elif self.is_op(OP_CALL):
-                self.tokens.append(self.Token(op="CALL", arg=self.parse_label()))
-            elif self.is_op(OP_JUMP):
-                self.tokens.append(self.Token(op="JUMP", arg=self.parse_label()))
-            elif self.is_op(OP_JUMPZERO):
-                self.tokens.append(self.Token(op="JUMPZERO", arg=self.parse_label()))
-            elif self.is_op(OP_JUMPNEG):
-                self.tokens.append(self.Token(op="JUMPNEG", arg=self.parse_label()))
-            elif self.is_op(OP_RETURN):
-                self.tokens.append(self.Token(op="RETURN"))
-            elif self.is_op(OP_ENDPROG):
-                self.tokens.append(self.Token(op="ENDPROGRAM"))
-            elif self.is_op(OP_OUTCH):
-                self.tokens.append(self.Token(op="OUTCH"))
-            elif self.is_op(OP_OUTNUM):
-                self.tokens.append(self.Token(op="OUTNUM"))
-            elif self.is_op(OP_INCH):
-                self.tokens.append(self.Token(op="INCH"))
-            elif self.is_op(OP_INNUM):
-                self.tokens.append(self.Token(op="INNUM"))
-            else:
-                exit(f"SYNTAX ERROR : BAD WHITESPACE INSTRUCTION "
-                    f"{self.unwhite(self.code[self.ip:],25)}"
-                    f" at location {self.ip}"
-                    )
+            for item in OPERATIONS:
+                if self.is_op(item["opchars"]):
+                    arg = self.parse_arg(item["name"])
+                    token = self.Token(item["name"], arg)
+                    self.tokens.append(token)
 
     def run(self):
         self.strip_comments()
