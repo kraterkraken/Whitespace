@@ -50,7 +50,7 @@ class WhitespaceVM:
         self.return_addrs = deque() # where to go back to when subroutine ends
         self.input_stream = ""      # a buffer to hold input
         self.next_input = 0         # the next thing to read from the stream
-        self.debug_flag = False     # flag to control depub statements
+        self.debug_flag = False     # flag to control debug statements
         self.describe_flag = False  # flag to control whether we describe the source
 
     def debug_token(self, token):
