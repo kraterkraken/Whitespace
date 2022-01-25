@@ -113,7 +113,6 @@ class WhitespaceVM:
         # not sure if python can index a dictionary with whitespace characters
         # so I'll "unwhite" the labels first
         label = self.unwhite(label)
-        #self.debug(f"  Parsed label {label}")
         self.ip += 1
         return label
 
@@ -121,35 +120,32 @@ class WhitespaceVM:
         num = 0
         mult = 0
         if self.code[self.ip] == SPACE:
+            # start of positive number
             mult = 1
-            # self.debug("Start of positive number ")
         elif self.code[self.ip] == TAB:
+            # start of negative number
             mult = -1
-            # self.debug("Start of negative number ")
         else:
             exit("SYNTAX ERROR : BAD SIGN")
+
         self.ip = self.ip + 1
         while self.ip < len(self.code) and self.code[self.ip] != LF:
             # about to add a new digit, so left shift the digits we have so far
             num = num << 1
             if self.code[self.ip] == TAB:
-                # self.debug("1 ", end='')
+                # found a 1
                 num = num | 1
             elif self.code[self.ip] == SPACE:
-                # self.debug("0 ", end='')
-                # don't need to do anything with a zero, as the left shift
-                # already put a zero in there
+                # found a 0 (the left shift already put a zero in there)
                 pass
             else:
                 exit("SYNTAX ERROR : BAD NUMBER")
             self.ip = self.ip + 1
         self.ip = self.ip + 1 # ip now points to the character after the LF
-        # self.debug("")
+
         return num * mult
 
     def is_op(self, candidate):
-        # self.debug(f"checking {self.unwhite(self.code[self.ip:],10)}"
-        #     f" for {self.unwhite(candidate)} at ip={self.ip}")
         left = len(self.code) - self.ip
 
         if left < len(candidate):
