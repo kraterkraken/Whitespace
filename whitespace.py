@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 from collections import deque
 import sys
 # ------------------------------ CONSTANTS
@@ -7,35 +6,36 @@ SPACE = ' '
 TAB = '\t'
 LF = '\n'
 HEAPSIZE = 512
-OPERATIONS = (
-    {"name": "PUSH",       "opchars": SPACE + SPACE},
-    {"name": "DUPLICATE",  "opchars": SPACE + LF    + SPACE},
-    {"name": "COPY",       "opchars": SPACE + TAB   + SPACE},
-    {"name": "SWAP",       "opchars": SPACE + LF    + TAB},
-    {"name": "DISCARD",    "opchars": SPACE + LF    + LF},
-    {"name": "SLIDE",      "opchars": SPACE + TAB   + LF},
-    {"name": "ADD",        "opchars": TAB   + SPACE + SPACE + SPACE},
-    {"name": "SUBTRACT",   "opchars": TAB   + SPACE + SPACE + TAB},
-    {"name": "MULTIPLY",   "opchars": TAB   + SPACE + SPACE + LF},
-    {"name": "DIVIDE",     "opchars": TAB   + SPACE + TAB   + SPACE},
-    {"name": "MODULO",     "opchars": TAB   + SPACE + TAB   + TAB},
-    {"name": "STORE",      "opchars": TAB   + TAB   + SPACE},
-    {"name": "RETRIEVE",   "opchars": TAB   + TAB   + TAB},
-    {"name": "MARK",       "opchars": LF    + SPACE + SPACE},
-    {"name": "CALL",       "opchars": LF    + SPACE + TAB},
-    {"name": "JUMP",       "opchars": LF    + SPACE + LF},
-    {"name": "JUMPZERO",   "opchars": LF    + TAB   + SPACE},
-    {"name": "JUMPNEG",    "opchars": LF    + TAB   + TAB},
-    {"name": "RETURN",     "opchars": LF    + TAB   + LF},
-    {"name": "ENDPROGRAM", "opchars": LF    + LF    + LF},
-    {"name": "OUTCH",      "opchars": TAB   + LF    + SPACE + SPACE},
-    {"name": "OUTNUM",     "opchars": TAB   + LF    + SPACE + TAB},
-    {"name": "INCH",       "opchars": TAB   + LF    + TAB   + SPACE},
-    {"name": "INNUM",      "opchars": TAB   + LF    + TAB   + TAB}
-)
 
 # -------------------------------CLASSES
 class WhitespaceVM:
+
+    OPERATIONS = {
+        "PUSH":       SPACE + SPACE,
+        "DUPLICATE":  SPACE + LF    + SPACE,
+        "COPY":       SPACE + TAB   + SPACE,
+        "SWAP":       SPACE + LF    + TAB,
+        "DISCARD":    SPACE + LF    + LF,
+        "SLIDE":      SPACE + TAB   + LF,
+        "ADD":        TAB   + SPACE + SPACE + SPACE,
+        "SUBTRACT":   TAB   + SPACE + SPACE + TAB,
+        "MULTIPLY":   TAB   + SPACE + SPACE + LF,
+        "DIVIDE":     TAB   + SPACE + TAB   + SPACE,
+        "MODULO":     TAB   + SPACE + TAB   + TAB,
+        "STORE":      TAB   + TAB   + SPACE,
+        "RETRIEVE":   TAB   + TAB   + TAB,
+        "MARK":       LF    + SPACE + SPACE,
+        "CALL":       LF    + SPACE + TAB,
+        "JUMP":       LF    + SPACE + LF,
+        "JUMPZERO":   LF    + TAB   + SPACE,
+        "JUMPNEG":    LF    + TAB   + TAB,
+        "RETURN":     LF    + TAB   + LF,
+        "ENDPROGRAM": LF    + LF    + LF,
+        "OUTCH":      TAB   + LF    + SPACE + SPACE,
+        "OUTNUM":     TAB   + LF    + SPACE + TAB,
+        "INCH":       TAB   + LF    + TAB   + SPACE,
+        "INNUM":      TAB   + LF    + TAB   + TAB
+    }
 
     class Token:
         def __init__(self, op="", arg=""):
@@ -186,10 +186,10 @@ class WhitespaceVM:
         # into a nice list of readable tokens for execution (and display).
         self.debug("Tokenizing ...")
         while self.ip < len(self.code):
-            for item in OPERATIONS:
-                if self.is_op(item["opchars"]):
-                    arg = self.parse_arg(item["name"])
-                    token = self.Token(item["name"], arg)
+            for name, opchars in self.OPERATIONS.items():
+                if self.is_op(opchars):
+                    arg = self.parse_arg(name)
+                    token = self.Token(name, arg)
                     self.tokens.append(token)
 
     def run(self):
