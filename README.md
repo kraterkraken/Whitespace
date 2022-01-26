@@ -1,6 +1,6 @@
 # Whitespace
 An interpretter for Edwin Brady's and Chris Morris's [Whitespace esoteric programming language](https://en.wikipedia.org/wiki/Whitespace_(programming_language)).  Also included is a utility for converting
-easy-to-read Enlish commands into Whitespace code, for ease of coding.  :)
+easy-to-read English commands into Whitespace code, for ease of coding.  :)
 
 Written in Python3.
 
