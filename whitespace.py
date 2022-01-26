@@ -432,7 +432,7 @@ class WhitespaceVM:
 # -------------------------------MAIN PROGRAM
 def main():
     # Handle command arguments
-    purpose_string = "whitepsace.py - execute a program in the Whitespace programming language\n"
+    purpose_string = "whitespace.py - execute a program in the Whitespace programming language\n"
     usage_string = (
         "usage: whitespace.py [--debug | --describe] filename\n"
         "usage: whitespace.py [--debug | --describe] -\n"
