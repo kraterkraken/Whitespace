@@ -186,11 +186,19 @@ class WhitespaceVM:
         # into a nice list of readable tokens for execution (and display).
         self.debug("Tokenizing ...")
         while self.ip < len(self.code):
+            self.debug(f"  {self.unwhite(self.code[self.ip:], max=45)}")
+            found = False
             for name, opchars in self.OPERATIONS.items():
                 if self.is_op(opchars):
                     arg = self.parse_arg(name)
+                    self.debug(f"  Parsed this: {self.unwhite(opchars)}-->{name} {arg}")
                     token = self.Token(name, arg)
                     self.tokens.append(token)
+                    found = True
+                    break
+            if not found:
+                exit(f"SYNTAX ERROR : BAD OPERATION : "
+                    f"{self.unwhite(self.code[self.ip:], max=45)}")
 
     def run(self):
         self.strip_comments()
