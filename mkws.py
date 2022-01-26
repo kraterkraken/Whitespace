@@ -54,32 +54,49 @@ def main():
     # Handle command arguments
     purpose_string = "mkws.py - convert an easy-to-read program into Whitespace code.\n"
     usage_string = (
-        "usage: mkws.py filename\n"
+        "usage: mkws.py - | filename\n"
+        "\n"
+        "Options:\n"
+        "  filename                An input file containing readable source code.\n"
+        "  -                       Get the source code from STDIN (overrides filename)\n"
+        "  --help                  Prints this help info\n"
         )
 
     filename = ""
+    stdinarg = False
     for arg in sys.argv[1:]:
-        if arg[0] == "-":
+        if arg == "--help":
+            print(purpose_string)
+            print(usage_string)
+            exit()
+        elif arg == "-":
+            stdinarg = True
+        elif arg[0] == "-":
             print(f"{sys.argv[0]}: error: unknown option {arg}\n")
             print(usage_string)
             exit()
         else:
             filename = arg
 
-    if filename == "":
-            print(f"{sys.argv[0]}: error: bad usage, must specify --test or a filename\n")
+    if not stdinarg and filename == "":
+            print(f"{sys.argv[0]}: error: bad usage, must specify - or a filename\n")
             print(usage_string)
             exit()
 
-    try:
-        with open(filename) as f:
-            source_code = f.read()
-    except IOError:
-        exit(f"{sys.argv[0]}: error: Could not open file {filename}")
+    # Get the source code
+    source_code = ""
+    if stdinarg:
+        source_code = sys.stdin.read()
+    else:
+        try:
+            with open(filename) as f:
+                source_code = f.read()
+        except IOError:
+            exit(f"{sys.argv[0]}: error: Could not open file {filename}")
 
     # Convert the source code to Whitespace
     wsc = WhitespaceConverter(source_code)
-    print(wsc.code, end='@')
+    print(wsc.code, end='')
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from collections import deque
 import sys
+import os
 # ------------------------------ CONSTANTS
 SPACE = ' '
 TAB = '\t'
@@ -434,12 +435,14 @@ def main():
     purpose_string = "whitepsace.py - execute a program in the Whitespace programming language\n"
     usage_string = (
         "usage: whitespace.py [--debug | --describe] filename\n"
+        "usage: whitespace.py [--debug | --describe] -\n"
         "usage: whitespace.py [--debug | --describe] --test\n"
         "usage: whitespace.py --help\n"
         "\n"
         "Options:\n"
-        "  filename                An input file containing Whitespace code\n"
-        "  --test                  Runs unit tests (overrides filename)\n"
+        "  filename                An input file containing Whitespace code.\n"
+        "  -                       Get the Whitespace source from STDIN (overrides filename)\n"
+        "  --test                  Runs unit tests (overrides filename and -)\n"
         "  --debug                 Turns on verbose debugging\n"
         "  --describe              Describes the given Whitespace code.  Does not "
         "execute the program.\n"
@@ -448,6 +451,7 @@ def main():
     testarg = False
     debugarg = False
     describearg = False
+    stdinarg = False
     filename = ""
     for arg in sys.argv[1:]:
         if arg == "--debug":
@@ -460,16 +464,19 @@ def main():
             print(purpose_string)
             print(usage_string)
             exit()
+        elif arg == "-":
+            stdinarg = True
         elif arg[0] == "-":
             print(f"{sys.argv[0]}: error: unknown option {arg}\n")
             print(usage_string)
             exit()
         else:
             filename = arg
-    if not testarg and filename == "":
-            print(f"{sys.argv[0]}: error: bad usage, must specify --test or a filename\n")
+    if not testarg and not stdinarg and filename == "":
+            print(f"{sys.argv[0]}: error: bad usage, must specify --test or - or a filename\n")
             print(usage_string)
             exit()
+
 
     # Get the source code
     source_code = ""
@@ -479,6 +486,13 @@ def main():
             print("Running unit tests.  Expected results are:")
             print(WhitespaceVM.expected_results)
             print("Actual results are:")
+    elif stdinarg:
+        source_code = sys.stdin.read()
+        # Was running into an EOF error when doing sys.stdin.read() followed by
+        # an input().  The solution below came from stackexchange, but I don't know
+        # if it works on windows.
+        sys.stdin.close()
+        sys.stdin = open(os.ctermid())
     else:
         try:
             with open(filename) as f:
