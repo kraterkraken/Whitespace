@@ -1,19 +1,36 @@
 # Whitespace
-An interpretter for Edwin Brady's and Chris Morris's [Whitespace esoteric programming language](https://en.wikipedia.org/wiki/Whitespace_(programming_language)).  Written in Python3.
+An interpretter for Edwin Brady's and Chris Morris's [Whitespace esoteric programming language](https://en.wikipedia.org/wiki/Whitespace_(programming_language)).  Also included is a utility for converting
+easy-to-read Enlish commands into Whitespace code, for ease of coding.  :)
 
-### Usage
+Written in Python3.
+
+### whitespace.py Usage
 ```
-whitepsace.py - execute a program in the Whitespace programming language
+whitespace.py - execute a program in the Whitespace programming language
 
 usage: whitespace.py [--debug | --describe] filename
+usage: whitespace.py [--debug | --describe] -
 usage: whitespace.py [--debug | --describe] --test
 usage: whitespace.py --help
 
 Options:
-  filename                An input file containing Whitespace code
-  --test                  Runs unit tests (overrides filename)
+  filename                An input file containing Whitespace code.
+  -                       Get the Whitespace source from STDIN (overrides filename)
+  --test                  Runs unit tests (overrides filename and -)
   --debug                 Turns on verbose debugging
   --describe              Describes the given Whitespace code.  Does not execute the program.
+  --help                  Prints this help info
+```
+
+### mkws.py Usage
+```
+mkws.py - convert an easy-to-read program into Whitespace code.
+
+usage: mkws.py - | filename
+
+Options:
+  filename                An input file containing readable source code.
+  -                       Get the source code from STDIN (overrides filename)
   --help                  Prints this help info
 ```
 
