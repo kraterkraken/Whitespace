@@ -2,6 +2,7 @@
 from collections import deque
 import sys
 import os
+import re
 # ------------------------------ CONSTANTS
 SPACE = ' '
 TAB = '\t'
@@ -92,21 +93,14 @@ class WhitespaceVM:
         self.next_input += 1
         return retval
 
-    def unwhite(self, arr, max=-1):
-        # Utility function for helping debug (funny thing, whitespace
-        # is impossible to read).  Converts whitespace to letters, and
-        # converts everything else to asterisks.
-        # Note: pass in a max of -1 to convert an entire string.
-        n = 0
-        ret = ""
-        for c in arr:
-            if c == SPACE: ret += "S"
-            elif c == TAB: ret += "T"
-            elif c == LF: ret += "L"
-            else: ret += "*"
-            n = n + 1
-            if max != -1 and n >= max: break
-        return ret
+    def unwhite(self, s, max=-1):
+        # Converts whitespace to letters, and converts everything else
+        # to asterisks.  The max argument allows the caller to get at most
+        # max characters back.  Note: negative max returns the entire string.
+        ret = re.sub("[^ \t\n]", "*", s)
+        ret = ret.replace(SPACE, "S").replace(TAB, "T").replace(LF, "L")
+        if max >= 0: return ret[:max]
+        else: return ret
 
     def parse_arg(self, operation):
         if operation in ("MARK", "CALL", "JUMP", "JUMPNEG", "JUMPZERO"):
@@ -315,7 +309,6 @@ class WhitespaceVM:
             self.debug("  stack is now: ", showstack=True)
             # move index to the next token and loop again
             i += 1
-
 
     test_code = (
         "-----BEGIN-SUBROUTINE-TO-OUTPUT-A-SPACE"
